@@ -81,3 +81,25 @@ export const addToPortfolio = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error adding to portfolio" });
   }
 };
+
+// Get coin news
+export const getCoinNews = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    // Using CryptoCompare API for news (free tier)
+    const { data } = await axios.get(
+      `https://min-api.cryptocompare.com/data/v2/news/?categories=${id}&excludeCategories=Sponsored`
+    );
+    res.json(data.Data || []);
+  } catch (err) {
+    // Fallback to general crypto news if specific coin news fails
+    try {
+      const { data } = await axios.get(
+        "https://min-api.cryptocompare.com/data/v2/news/?categories=Crypto&excludeCategories=Sponsored"
+      );
+      res.json(data.Data || []);
+    } catch (fallbackErr) {
+      res.status(500).json({ message: "Error fetching news" });
+    }
+  }
+};

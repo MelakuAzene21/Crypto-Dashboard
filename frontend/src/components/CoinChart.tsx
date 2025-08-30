@@ -28,26 +28,60 @@ export default function CoinChart({
   prices,
   title = "Price Chart",
   isPositive = true,
+  timePeriod = "30d",
 }: {
   prices: number[];
   title?: string;
   isPositive?: boolean;
+  timePeriod?: string;
 }) {
   const theme = useTheme();
   const chartColor = isPositive
     ? theme.palette.success.main
     : theme.palette.error.main;
 
-  // Generate dates for the last 30 days
-  const dates = [];
-  const today = new Date();
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(today.getDate() - i);
-    dates.push(
-      date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
-    );
-  }
+  // Generate dates based on time period
+  const generateDates = () => {
+    const dates = [];
+    const today = new Date();
+    let days: number;
+    
+    switch (timePeriod) {
+      case "7d":
+        days = 7;
+        break;
+      case "30d":
+        days = 30;
+        break;
+      case "90d":
+        days = 90;
+        break;
+      case "1y":
+        days = 365;
+        break;
+      default:
+        days = 30;
+    }
+
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(today.getDate() - i);
+      
+      let dateFormat: Intl.DateTimeFormatOptions;
+      if (timePeriod === "1y") {
+        dateFormat = { month: "short", day: "numeric" };
+      } else if (timePeriod === "90d") {
+        dateFormat = { month: "short", day: "numeric" };
+      } else {
+        dateFormat = { month: "short", day: "numeric" };
+      }
+      
+      dates.push(date.toLocaleDateString(undefined, dateFormat));
+    }
+    return dates;
+  };
+
+  const dates = generateDates();
 
   return (
     <Line
@@ -64,7 +98,7 @@ export default function CoinChart({
             pointBackgroundColor: chartColor,
             pointBorderColor: theme.palette.background.paper,
             pointBorderWidth: 2,
-            pointRadius: 3,
+            pointRadius: timePeriod === "1y" ? 1 : 3,
             pointHoverRadius: 6,
           },
         ],
@@ -113,7 +147,7 @@ export default function CoinChart({
               color: theme.palette.text.secondary,
               maxRotation: 0,
               autoSkip: true,
-              maxTicksLimit: 6,
+              maxTicksLimit: timePeriod === "1y" ? 12 : 6,
             },
           },
           y: {
