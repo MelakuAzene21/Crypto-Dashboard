@@ -5,6 +5,7 @@ import Portfolio from "../models/Portfolio.js";
 
 // Fetch top coins
 export const getTopCoins = async (req: Request, res: Response) => {
+  const { page = 1 } = req.query;
   try {
     const { data } = await axios.get(
       "https://api.coingecko.com/api/v3/coins/markets",
@@ -13,7 +14,7 @@ export const getTopCoins = async (req: Request, res: Response) => {
           vs_currency: "usd",
           order: "market_cap_desc",
           per_page: 50,
-          page: 1,
+          page: Number(page),
           sparkline: true,
         },
       }

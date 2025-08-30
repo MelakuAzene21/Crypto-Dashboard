@@ -10,6 +10,8 @@ import {
   TextField,
   IconButton,
   Paper,
+  Pagination,
+  Box,
 } from "@mui/material";
 import { Link } from "react-router-dom";
 import StarIcon from "@mui/icons-material/Star";
@@ -25,12 +27,14 @@ export default function CoinTable({
   const [watchlist, setWatchlist] = useState<string[]>(
     JSON.parse(localStorage.getItem("watchlist") || "[]")
   );
+  const [page, setPage] = useState(1);
+  const [totalPages] = useState(10); // Assuming 500 coins total, 50 per page; adjust if needed
 
   useEffect(() => {
     fetchCoins();
     const interval = setInterval(fetchCoins, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     localStorage.setItem("watchlist", JSON.stringify(watchlist));
@@ -38,7 +42,9 @@ export default function CoinTable({
 
   const fetchCoins = async () => {
     try {
-      const { data } = await axios.get("http://localhost:5000/api/coins");
+      const { data } = await axios.get(
+        `http://localhost:5000/api/coins?page=${page}`
+      );
       setCoins(data);
     } catch (error) {
       console.error("Error fetching coins:", error);
@@ -56,6 +62,13 @@ export default function CoinTable({
       coin.name.toLowerCase().includes(search.toLowerCase()) ||
       coin.symbol.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handlePageChange = (
+    event: React.ChangeEvent<unknown>,
+    value: number
+  ) => {
+    setPage(value);
+  };
 
   return (
     <Paper elevation={3} sx={{ p: 2, mt: 2, borderRadius: "8px" }}>
@@ -117,6 +130,16 @@ export default function CoinTable({
           ))}
         </TableBody>
       </Table>
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+          showFirstButton
+          showLastButton
+        />
+      </Box>
     </Paper>
   );
 }
