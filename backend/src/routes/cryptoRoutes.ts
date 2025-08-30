@@ -8,7 +8,7 @@ import {
   addToPortfolio,
   getCoinNews,
   getNews,
-} from "../controllers/cryptoController.js";
+} from "../controllers/cryptoController";
 
 const router = express.Router();
 

@@ -1,7 +1,7 @@
 // backend/src/controllers/cryptoController.ts
 import axios from "axios";
 import { Request, Response } from "express";
-import Portfolio from "../models/Portfolio.js";
+import Portfolio from "../models/Portfolio";
 
 // Fetch top coins
 export const getTopCoins = async (req: Request, res: Response) => {

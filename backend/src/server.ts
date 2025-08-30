@@ -1,8 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import connectDB from "./config/db.js";
-import cryptoRoutes from "./routes/cryptoRoutes.js";
+import connectDB from "./config/db";
+import cryptoRoutes from "./routes/cryptoRoutes";
 dotenv.config();
 connectDB();
  
