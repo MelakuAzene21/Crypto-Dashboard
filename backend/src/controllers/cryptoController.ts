@@ -1,5 +1,7 @@
+// backend/src/controllers/cryptoController.ts
 import axios from "axios";
 import { Request, Response } from "express";
+import Portfolio from "../models/Portfolio.js";
 
 // Fetch top coins
 export const getTopCoins = async (req: Request, res: Response) => {
@@ -19,5 +21,62 @@ export const getTopCoins = async (req: Request, res: Response) => {
     res.json(data);
   } catch (err) {
     res.status(500).json({ message: "Error fetching coins" });
+  }
+};
+
+// Get coin details
+export const getCoinDetails = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { data } = await axios.get(
+      `https://api.coingecko.com/api/v3/coins/${id}`
+    );
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching coin details" });
+  }
+};
+
+// Get coin history
+export const getCoinHistory = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { days } = req.query;
+  try {
+    const { data } = await axios.get(
+      `https://api.coingecko.com/api/v3/coins/${id}/market_chart`,
+      {
+        params: {
+          vs_currency: "usd",
+          days: days || 7,
+        },
+      }
+    );
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching coin history" });
+  }
+};
+
+// Get portfolio
+export const getPortfolio = async (req: Request, res: Response) => {
+  const userId = "user1"; // Fixed userId for simplicity (add auth in production)
+  try {
+    const portfolio = await Portfolio.find({ userId });
+    res.json(portfolio);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching portfolio" });
+  }
+};
+
+// Add to portfolio
+export const addToPortfolio = async (req: Request, res: Response) => {
+  const userId = "user1";
+  const { coinId, quantity, buyPrice } = req.body;
+  try {
+    const newItem = new Portfolio({ userId, coinId, quantity, buyPrice });
+    await newItem.save();
+    res.json(newItem);
+  } catch (err) {
+    res.status(500).json({ message: "Error adding to portfolio" });
   }
 };
