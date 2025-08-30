@@ -28,6 +28,8 @@ import {
   BarChart,
   ShowChart,
   Analytics,
+  Star,
+  StarBorder,
 } from "@mui/icons-material";
 
 export default function Markets() {
@@ -36,12 +38,14 @@ export default function Markets() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("market_cap");
   const [loading, setLoading] = useState(true);
+  const [watchlist, setWatchlist] = useState<string[]>([]);
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   useEffect(() => {
     fetchCoins();
+    loadWatchlist();
     const interval = setInterval(fetchCoins, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -104,6 +108,21 @@ export default function Markets() {
     const gainers = coins.filter(coin => coin.price_change_percentage_24h > 0).length;
     const losers = coins.filter(coin => coin.price_change_percentage_24h < 0).length;
     return { gainers, losers };
+  };
+
+  const loadWatchlist = () => {
+    const saved = localStorage.getItem("watchlist");
+    if (saved) {
+      setWatchlist(JSON.parse(saved));
+    }
+  };
+
+  const toggleWatchlist = (coinId: string) => {
+    const newWatchlist = watchlist.includes(coinId)
+      ? watchlist.filter(id => id !== coinId)
+      : [...watchlist, coinId];
+    localStorage.setItem("watchlist", JSON.stringify(newWatchlist));
+    setWatchlist(newWatchlist);
   };
 
   const stats = getMarketStats();
@@ -356,6 +375,27 @@ export default function Markets() {
                       {coin.symbol.toUpperCase()}
                     </Typography>
                   </Box>
+                  <Tooltip title={watchlist.includes(coin.id) ? "Remove from watchlist" : "Add to watchlist"}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleWatchlist(coin.id);
+                      }}
+                      sx={{
+                        color: watchlist.includes(coin.id) ? "warning.main" : "text.secondary",
+                        "&:hover": {
+                          bgcolor: watchlist.includes(coin.id) ? "rgba(245, 158, 11, 0.1)" : "rgba(148, 163, 184, 0.1)",
+                        },
+                      }}
+                    >
+                      {watchlist.includes(coin.id) ? (
+                        <Star sx={{ fontSize: 16 }} />
+                      ) : (
+                        <StarBorder sx={{ fontSize: 16 }} />
+                      )}
+                    </IconButton>
+                  </Tooltip>
                 </Box>
 
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
