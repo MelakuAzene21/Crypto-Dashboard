@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ESNext", // modern JS output
+    "module": "NodeNext", // required for ESM (.js imports)
+    "moduleResolution": "NodeNext", // resolves modules like Node ESM
+    "outDir": "./dist", // compiled JS output folder
+    "rootDir": "./src", // where your TS source code lives
+    "esModuleInterop": true, // allows default import of CommonJS modules
+    "forceConsistentCasingInFileNames": true, // avoids case sensitivity bugs
+    "strict": true, // enable all strict type-checking
+    "skipLibCheck": true // skip checking type definition files
+  },
+  "include": ["src"], // compile only your source code
+  "exclude": ["node_modules", "dist"] // ignore these folders
+}
