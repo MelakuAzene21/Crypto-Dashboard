@@ -5,6 +5,10 @@ import { CssBaseline, Box } from "@mui/material";
 import Home from "./pages/Home";
 import CoinDetail from "./pages/CoinDetail";
 import Markets from "./pages/Markets";
+import Portfolio from "./pages/Portfolio";
+import Watchlist from "./pages/Watchlist";
+import News from "./pages/News";
+import Alerts from "./pages/Alerts";
 import Sidebar from "./components/Sidebar";
 
 const darkTheme = createTheme({
@@ -128,6 +132,10 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/markets" element={<Markets />} />
+              <Route path="/portfolio" element={<Portfolio />} />
+              <Route path="/watchlist" element={<Watchlist />} />
+              <Route path="/news" element={<News />} />
+              <Route path="/alerts" element={<Alerts />} />
               <Route path="/coin/:id" element={<CoinDetail />} />
             </Routes>
           </Box>

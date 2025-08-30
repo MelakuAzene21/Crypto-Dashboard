@@ -103,3 +103,16 @@ export const getCoinNews = async (req: Request, res: Response) => {
     }
   }
 };
+
+// Get general news
+export const getNews = async (req: Request, res: Response) => {
+  const { category = "Crypto" } = req.query;
+  try {
+    const { data } = await axios.get(
+      `https://min-api.cryptocompare.com/data/v2/news/?categories=${category}&excludeCategories=Sponsored`
+    );
+    res.json(data.Data || []);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching news" });
+  }
+};
