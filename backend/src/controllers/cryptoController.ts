@@ -13,7 +13,7 @@ export const getTopCoins = async (req: Request, res: Response) => {
         params: {
           vs_currency: "usd",
           order: "market_cap_desc",
-          per_page: 50,
+          per_page: 15,
           page: Number(page),
           sparkline: true,
         },
