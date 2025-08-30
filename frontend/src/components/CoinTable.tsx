@@ -1,241 +1,253 @@
 // frontend/src/components/CoinTable.tsx
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
+  TableBody,
+  TableCell,
+  TableContainer,
   TableHead,
   TableRow,
-  TableCell,
-  TableBody,
-  TextField,
-  IconButton,
   Paper,
-  Pagination,
+  Typography,
   Box,
+  Avatar,
+  Chip,
   Skeleton,
-  CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
-import { Link } from "react-router-dom";
-import StarIcon from "@mui/icons-material/Star";
-import AddIcon from "@mui/icons-material/Add";
+import {
+  TrendingUp,
+  TrendingDown,
+  BarChart,
+} from "@mui/icons-material";
 
-export default function CoinTable({
-  onAddToPortfolio,
-}: {
-  onAddToPortfolio: (coin: any) => void;
-}) {
-  const [coins, setCoins] = useState<any[]>([]);
-  const [search, setSearch] = useState("");
-  const [watchlist, setWatchlist] = useState<string[]>(
-    JSON.parse(localStorage.getItem("watchlist") || "[]")
-  );
-  const [page, setPage] = useState(1);
-  const [totalPages] = useState(10);
-  const [loading, setLoading] = useState(true);
+interface CoinTableProps {
+  coins: any[];
+  loading: boolean;
+}
 
-  useEffect(() => {
-    fetchCoins();
-    const interval = setInterval(fetchCoins, 30000);
-    return () => clearInterval(interval);
-  }, [page]);
+export default function CoinTable({ coins, loading }: CoinTableProps) {
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  useEffect(() => {
-    localStorage.setItem("watchlist", JSON.stringify(watchlist));
-  }, [watchlist]);
-
-  const fetchCoins = async () => {
-    try {
-      setLoading(true);
-      const { data } = await axios.get(
-        `http://localhost:5000/api/coins?page=${page}`
-      );
-      setCoins(data);
-    } catch (error) {
-      console.error("Error fetching coins:", error);
-    } finally {
-      setLoading(false);
-    }
+  const formatCurrency = (value: number) => {
+    if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+    return `$${value.toLocaleString()}`;
   };
 
-  const toggleWatchlist = (id: string) => {
-    setWatchlist((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+  const formatPrice = (price: number) => {
+    if (price >= 1000) return `$${price.toLocaleString()}`;
+    if (price >= 1) return `$${price.toFixed(2)}`;
+    return `$${price.toFixed(4)}`;
+  };
+
+  const getSparklineColor = (sparkline: number[]) => {
+    if (sparkline.length < 2) return theme.palette.success.main;
+    const first = sparkline[0];
+    const last = sparkline[sparkline.length - 1];
+    return last >= first ? theme.palette.success.main : theme.palette.error.main;
+  };
+
+  const renderSparkline = (sparkline: number[]) => {
+    if (!sparkline || sparkline.length === 0) return null;
+    
+    const color = getSparklineColor(sparkline);
+    const max = Math.max(...sparkline);
+    const min = Math.min(...sparkline);
+    const range = max - min;
+    
+    return (
+      <Box sx={{ display: "flex", alignItems: "end", height: 30, gap: 0.5 }}>
+        {sparkline.slice(-7).map((value, index) => {
+          const height = range > 0 ? ((value - min) / range) * 20 + 5 : 12;
+          return (
+            <Box
+              key={index}
+              sx={{
+                width: 3,
+                height: height,
+                bgcolor: color,
+                borderRadius: 0.5,
+                opacity: 0.8,
+              }}
+            />
+          );
+        })}
+      </Box>
     );
   };
 
-  const filteredCoins = coins.filter(
-    (coin) =>
-      coin.name.toLowerCase().includes(search.toLowerCase()) ||
-      coin.symbol.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const handlePageChange = (
-    event: React.ChangeEvent<unknown>,
-    value: number
-  ) => {
-    setPage(value);
-  };
-
-  // Skeleton rows for loading state
-  const skeletonRows = Array.from({ length: 10 }).map((_, index) => (
-    <TableRow key={index} hover>
-      <TableCell>
-        <Skeleton variant="circular" width={40} height={40} />
-      </TableCell>
-      <TableCell>
-        <Skeleton variant="circular" width={30} height={30} />
-      </TableCell>
-      <TableCell>
-        <Skeleton variant="text" width={150} />
-      </TableCell>
-      <TableCell>
-        <Skeleton variant="text" width={80} />
-      </TableCell>
-      <TableCell>
-        <Skeleton variant="text" width={70} />
-      </TableCell>
-      <TableCell>
-        <Skeleton variant="text" width={120} />
-      </TableCell>
-      <TableCell>
-        <Skeleton variant="circular" width={40} height={40} />
-      </TableCell>
-    </TableRow>
-  ));
+  if (loading) {
+    return (
+      <TableContainer component={Paper} sx={{ borderRadius: 3, overflow: "hidden" }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ borderBottom: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                <Skeleton width={100} height={24} />
+              </TableCell>
+              <TableCell sx={{ borderBottom: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                <Skeleton width={80} height={24} />
+              </TableCell>
+              <TableCell sx={{ borderBottom: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                <Skeleton width={100} height={24} />
+              </TableCell>
+              <TableCell sx={{ borderBottom: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                <Skeleton width={100} height={24} />
+              </TableCell>
+              <TableCell sx={{ borderBottom: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                <Skeleton width={100} height={24} />
+              </TableCell>
+              <TableCell sx={{ borderBottom: "1px solid rgba(148, 163, 184, 0.1)" }}>
+                <Skeleton width={80} height={24} />
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {[...Array(10)].map((_, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Skeleton variant="circular" width={32} height={32} />
+                    <Box>
+                      <Skeleton width={80} height={20} />
+                      <Skeleton width={40} height={16} />
+                    </Box>
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Skeleton width={60} height={20} />
+                </TableCell>
+                <TableCell>
+                  <Skeleton width={80} height={20} />
+                </TableCell>
+                <TableCell>
+                  <Skeleton width={100} height={20} />
+                </TableCell>
+                <TableCell>
+                  <Skeleton width={100} height={20} />
+                </TableCell>
+                <TableCell>
+                  <Skeleton width={60} height={20} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  }
 
   return (
-    <Paper elevation={3} sx={{ p: 2, mt: 2, borderRadius: "8px" }}>
-      <TextField
-        label="Search by name or symbol"
-        variant="outlined"
-        fullWidth
-        sx={{ mb: 2 }}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-
-      {loading && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: "rgba(255, 255, 255, 0.7)",
-            zIndex: 10,
-            borderRadius: "8px",
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 2,
-            }}
-          >
-            <CircularProgress
-              size={60}
-              thickness={4}
-              sx={{
-                color: "primary.main",
-                animationDuration: "1.5s",
-              }}
-            />
-            <Box
-              sx={{
-                fontSize: "1rem",
-                fontWeight: "500",
-                color: "text.primary",
-                background: "linear-gradient(90deg, #1976d2, #42a5f5, #1976d2)",
-                backgroundSize: "200% auto",
-                backgroundClip: "text",
-                textFillColor: "transparent",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                animation: "gradientShift 2s linear infinite",
-                "@keyframes gradientShift": {
-                  "0%": { backgroundPosition: "0% 50%" },
-                  "50%": { backgroundPosition: "100% 50%" },
-                  "100%": { backgroundPosition: "0% 50%" },
-                },
-              }}
-            >
-              Loading cryptocurrency data...
-            </Box>
-          </Box>
-        </Box>
-      )}
-
+    <TableContainer component={Paper} sx={{ borderRadius: 3, overflow: "hidden" }}>
       <Table>
         <TableHead>
-          <TableRow>
-            <TableCell>Watch</TableCell>
-            <TableCell>Logo</TableCell>
-            <TableCell>Name</TableCell>
-            <TableCell>Price</TableCell>
-            <TableCell>24h Change</TableCell>
-            <TableCell>Market Cap</TableCell>
-            <TableCell>Actions</TableCell>
+          <TableRow sx={{ bgcolor: "rgba(30, 41, 59, 0.5)" }}>
+            <TableCell sx={{ borderBottom: "1px solid rgba(148, 163, 184, 0.1)" }}>
+              <Typography variant="subtitle2" fontWeight="600" color="text.secondary">
+                Asset
+              </Typography>
+            </TableCell>
+            <TableCell sx={{ borderBottom: "1px solid rgba(148, 163, 184, 0.1)" }}>
+              <Typography variant="subtitle2" fontWeight="600" color="text.secondary">
+                Price
+              </Typography>
+            </TableCell>
+            <TableCell sx={{ borderBottom: "1px solid rgba(148, 163, 184, 0.1)" }}>
+              <Typography variant="subtitle2" fontWeight="600" color="text.secondary">
+                24h Change
+              </Typography>
+            </TableCell>
+            <TableCell sx={{ borderBottom: "1px solid rgba(148, 163, 184, 0.1)" }}>
+              <Typography variant="subtitle2" fontWeight="600" color="text.secondary">
+                Market Cap
+              </Typography>
+            </TableCell>
+            <TableCell sx={{ borderBottom: "1px solid rgba(148, 163, 184, 0.1)" }}>
+              <Typography variant="subtitle2" fontWeight="600" color="text.secondary">
+                Volume (24h)
+              </Typography>
+            </TableCell>
+            <TableCell sx={{ borderBottom: "1px solid rgba(148, 163, 184, 0.1)" }}>
+              <Typography variant="subtitle2" fontWeight="600" color="text.secondary">
+                Chart
+              </Typography>
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {loading
-            ? skeletonRows
-            : filteredCoins.map((coin) => (
-                <TableRow key={coin.id} hover>
-                  <TableCell>
-                    <IconButton onClick={() => toggleWatchlist(coin.id)}>
-                      <StarIcon
-                        color={
-                          watchlist.includes(coin.id) ? "primary" : "disabled"
-                        }
-                      />
-                    </IconButton>
-                  </TableCell>
-                  <TableCell>
-                    <img src={coin.image} alt={coin.name} width={25} />
-                  </TableCell>
-                  <TableCell>
-                    <Link
-                      to={`/coin/${coin.id}`}
-                      style={{ textDecoration: "none", color: "inherit" }}
-                    >
-                      {coin.name} ({coin.symbol.toUpperCase()})
-                    </Link>
-                  </TableCell>
-                  <TableCell>${coin.current_price.toLocaleString()}</TableCell>
-                  <TableCell
-                    style={{
-                      color:
-                        coin.price_change_percentage_24h > 0 ? "green" : "red",
-                    }}
+          {coins.map((coin) => (
+            <TableRow
+              key={coin.id}
+              sx={{
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  bgcolor: "rgba(59, 130, 246, 0.05)",
+                },
+                "&:last-child td": { border: 0 },
+              }}
+              onClick={() => navigate(`/coin/${coin.id}`)}
+            >
+              <TableCell>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar
+                    src={coin.image}
+                    sx={{ width: 32, height: 32 }}
+                  />
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight="600" color="white">
+                      {coin.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {coin.symbol.toUpperCase()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </TableCell>
+              <TableCell>
+                <Typography variant="subtitle2" fontWeight="600" color="white">
+                  {formatPrice(coin.current_price)}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  {coin.price_change_percentage_24h >= 0 ? (
+                    <TrendingUp sx={{ color: "success.main", fontSize: 16 }} />
+                  ) : (
+                    <TrendingDown sx={{ color: "error.main", fontSize: 16 }} />
+                  )}
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight="600"
+                    color={coin.price_change_percentage_24h >= 0 ? "success.main" : "error.main"}
                   >
                     {coin.price_change_percentage_24h.toFixed(2)}%
-                  </TableCell>
-                  <TableCell>${coin.market_cap.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <IconButton onClick={() => onAddToPortfolio(coin)}>
-                      <AddIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
+                  </Typography>
+                </Box>
+              </TableCell>
+              <TableCell>
+                <Typography variant="subtitle2" fontWeight="600" color="white">
+                  {formatCurrency(coin.market_cap)}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="subtitle2" fontWeight="600" color="white">
+                  {formatCurrency(coin.total_volume)}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                {renderSparkline(coin.sparkline_in_7d?.price || [])}
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-        <Pagination
-          count={totalPages}
-          page={page}
-          onChange={handlePageChange}
-          color="primary"
-          showFirstButton
-          showLastButton
-        />
-      </Box>
-    </Paper>
+    </TableContainer>
   );
 }

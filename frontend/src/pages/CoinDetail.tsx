@@ -45,7 +45,6 @@ import {
   Link as LinkIcon,
 } from "@mui/icons-material";
 import CoinChart from "../components/CoinChart";
-import Navbar from "../components/Navbar";
 
 export default function CoinDetail() {
   const { id } = useParams<{ id: string }>();
@@ -170,10 +169,9 @@ export default function CoinDetail() {
       sx={{
         bgcolor: "background.default",
         minHeight: "100vh",
-        p: { xs: 1, md: 3 },
+        p: { xs: 2, md: 4 },
       }}
     >
-      <Navbar />
       
       {/* Coin Header Section */}
       <Paper
