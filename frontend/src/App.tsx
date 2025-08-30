@@ -9,7 +9,9 @@ import Portfolio from "./pages/Portfolio";
 import Watchlist from "./pages/Watchlist";
 import News from "./pages/News";
 import Alerts from "./pages/Alerts";
+import Settings from "./pages/Settings";
 import Sidebar from "./components/Sidebar";
+import { NotificationProvider } from "./contexts/NotificationContext";
 
 const darkTheme = createTheme({
   palette: {
@@ -125,22 +127,25 @@ function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-      <Router>
-        <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "background.default" }}>
-          <Sidebar />
-          <Box sx={{ flexGrow: 1, overflow: "auto" }}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/markets" element={<Markets />} />
-              <Route path="/portfolio" element={<Portfolio />} />
-              <Route path="/watchlist" element={<Watchlist />} />
-              <Route path="/news" element={<News />} />
-              <Route path="/alerts" element={<Alerts />} />
-              <Route path="/coin/:id" element={<CoinDetail />} />
-            </Routes>
+      <NotificationProvider>
+        <Router>
+          <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "background.default" }}>
+            <Sidebar />
+            <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/markets" element={<Markets />} />
+                <Route path="/portfolio" element={<Portfolio />} />
+                <Route path="/watchlist" element={<Watchlist />} />
+                <Route path="/news" element={<News />} />
+                <Route path="/alerts" element={<Alerts />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/coin/:id" element={<CoinDetail />} />
+              </Routes>
+            </Box>
           </Box>
-        </Box>
-      </Router>
+        </Router>
+      </NotificationProvider>
     </ThemeProvider>
   );
 }

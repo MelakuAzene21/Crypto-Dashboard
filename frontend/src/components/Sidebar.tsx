@@ -157,6 +157,7 @@ export default function Sidebar() {
           </Box>
         </Box>
         <ListItemButton
+          onClick={() => handleNavigation("/settings")}
           sx={{
             borderRadius: 2,
             "&:hover": {
