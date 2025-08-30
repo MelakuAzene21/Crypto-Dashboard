@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNotification } from "../contexts/NotificationContext";
 import {
   Box,
   Typography,
@@ -25,6 +26,17 @@ import {
   TrendingDown,
   Settings,
 } from "@mui/icons-material";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
 
 interface Alert {
   id: string;
@@ -41,8 +53,18 @@ interface Alert {
 export default function Alerts() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [newAlert, setNewAlert] = useState({
+    coinId: "",
+    coinName: "",
+    coinSymbol: "",
+    coinImage: "",
+    type: "above" as "above" | "below",
+    price: "",
+  });
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { showNotification } = useNotification();
 
   useEffect(() => {
     loadAlerts();
@@ -62,15 +84,24 @@ export default function Alerts() {
   };
 
   const toggleAlert = (alertId: string) => {
+    const alertToToggle = alerts.find(alert => alert.id === alertId);
     const newAlerts = alerts.map(alert =>
       alert.id === alertId ? { ...alert, isActive: !alert.isActive } : alert
     );
     saveAlerts(newAlerts);
+    if (alertToToggle) {
+      const status = !alertToToggle.isActive ? 'activated' : 'deactivated';
+      showNotification(`Alert for ${alertToToggle.coinName} ${status}`, 'info');
+    }
   };
 
   const deleteAlert = (alertId: string) => {
+    const alertToDelete = alerts.find(alert => alert.id === alertId);
     const newAlerts = alerts.filter(alert => alert.id !== alertId);
     saveAlerts(newAlerts);
+    if (alertToDelete) {
+      showNotification(`Alert for ${alertToDelete.coinName} deleted`, 'info');
+    }
   };
 
   const getAlertStats = () => {
@@ -81,6 +112,49 @@ export default function Alerts() {
   };
 
   const stats = getAlertStats();
+
+  const handleAddAlert = () => {
+    if (newAlert.coinName && newAlert.coinSymbol && newAlert.price) {
+      const alert: Alert = {
+        id: Date.now().toString(),
+        coinId: newAlert.coinId || newAlert.coinSymbol.toLowerCase(),
+        coinName: newAlert.coinName,
+        coinSymbol: newAlert.coinSymbol,
+        coinImage: newAlert.coinImage || `https://api.coingecko.com/api/v3/coins/${newAlert.coinId}/image`,
+        type: newAlert.type,
+        price: parseFloat(newAlert.price),
+        isActive: true,
+        createdAt: new Date(),
+      };
+      
+      const newAlerts = [...alerts, alert];
+      saveAlerts(newAlerts);
+      setOpenAddDialog(false);
+      setNewAlert({
+        coinId: "",
+        coinName: "",
+        coinSymbol: "",
+        coinImage: "",
+        type: "above",
+        price: "",
+      });
+      showNotification(`Alert created for ${alert.coinName} at $${alert.price}`, 'success');
+    } else {
+      showNotification('Please fill in all required fields', 'error');
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setOpenAddDialog(false);
+    setNewAlert({
+      coinId: "",
+      coinName: "",
+      coinSymbol: "",
+      coinImage: "",
+      type: "above",
+      price: "",
+    });
+  };
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, minHeight: "100vh" }}>
@@ -98,6 +172,7 @@ export default function Alerts() {
           <Button
             variant="contained"
             startIcon={<Add />}
+            onClick={() => setOpenAddDialog(true)}
             sx={{
               background: "linear-gradient(135deg, #00D4AA 0%, #3B82F6 100%)",
               "&:hover": {
@@ -241,6 +316,7 @@ export default function Alerts() {
             <Button
               variant="contained"
               startIcon={<Add />}
+              onClick={() => setOpenAddDialog(true)}
               sx={{
                 background: "linear-gradient(135deg, #00D4AA 0%, #3B82F6 100%)",
                 "&:hover": {
@@ -346,6 +422,109 @@ export default function Alerts() {
           ))}
         </Grid>
       )}
+
+      {/* Add Alert Dialog */}
+      <Dialog
+        open={openAddDialog}
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: "linear-gradient(145deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%)",
+            border: "1px solid rgba(148, 163, 184, 0.1)",
+            borderRadius: 3,
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: "white", fontWeight: 600 }}>
+          Add Price Alert
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 1 }}>
+            <TextField
+              fullWidth
+              label="Coin Name"
+              value={newAlert.coinName}
+              onChange={(e) => setNewAlert(prev => ({ ...prev, coinName: e.target.value }))}
+              sx={{ mb: 2 }}
+              InputProps={{
+                sx: { color: "white" },
+              }}
+              InputLabelProps={{
+                sx: { color: "text.secondary" },
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Coin Symbol"
+              value={newAlert.coinSymbol}
+              onChange={(e) => setNewAlert(prev => ({ ...prev, coinSymbol: e.target.value }))}
+              sx={{ mb: 2 }}
+              InputProps={{
+                sx: { color: "white" },
+              }}
+              InputLabelProps={{
+                sx: { color: "text.secondary" },
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Coin Image URL (optional)"
+              value={newAlert.coinImage}
+              onChange={(e) => setNewAlert(prev => ({ ...prev, coinImage: e.target.value }))}
+              sx={{ mb: 2 }}
+              InputProps={{
+                sx: { color: "white" },
+              }}
+              InputLabelProps={{
+                sx: { color: "text.secondary" },
+              }}
+            />
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel sx={{ color: "text.secondary" }}>Alert Type</InputLabel>
+              <Select
+                value={newAlert.type}
+                onChange={(e) => setNewAlert(prev => ({ ...prev, type: e.target.value as "above" | "below" }))}
+                sx={{ color: "white" }}
+              >
+                <MenuItem value="above">Above Price</MenuItem>
+                <MenuItem value="below">Below Price</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Target Price"
+              type="number"
+              value={newAlert.price}
+              onChange={(e) => setNewAlert(prev => ({ ...prev, price: e.target.value }))}
+              InputProps={{
+                sx: { color: "white" },
+              }}
+              InputLabelProps={{
+                sx: { color: "text.secondary" },
+              }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={handleCloseDialog} sx={{ color: "text.secondary" }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleAddAlert}
+            variant="contained"
+            sx={{
+              background: "linear-gradient(135deg, #00D4AA 0%, #3B82F6 100%)",
+              "&:hover": {
+                background: "linear-gradient(135deg, #33DDBB 0%, #60A5FA 100%)",
+              },
+            }}
+          >
+            Add Alert
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
