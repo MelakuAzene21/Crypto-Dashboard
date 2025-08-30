@@ -12,6 +12,8 @@ import {
   Paper,
   Pagination,
   Box,
+  Skeleton,
+  CircularProgress,
 } from "@mui/material";
 import { Link } from "react-router-dom";
 import StarIcon from "@mui/icons-material/Star";
@@ -28,7 +30,8 @@ export default function CoinTable({
     JSON.parse(localStorage.getItem("watchlist") || "[]")
   );
   const [page, setPage] = useState(1);
-  const [totalPages] = useState(10); // Assuming 500 coins total, 50 per page; adjust if needed
+  const [totalPages] = useState(10);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchCoins();
@@ -42,12 +45,15 @@ export default function CoinTable({
 
   const fetchCoins = async () => {
     try {
+      setLoading(true);
       const { data } = await axios.get(
         `http://localhost:5000/api/coins?page=${page}`
       );
       setCoins(data);
     } catch (error) {
       console.error("Error fetching coins:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,6 +76,33 @@ export default function CoinTable({
     setPage(value);
   };
 
+  // Skeleton rows for loading state
+  const skeletonRows = Array.from({ length: 10 }).map((_, index) => (
+    <TableRow key={index} hover>
+      <TableCell>
+        <Skeleton variant="circular" width={40} height={40} />
+      </TableCell>
+      <TableCell>
+        <Skeleton variant="circular" width={30} height={30} />
+      </TableCell>
+      <TableCell>
+        <Skeleton variant="text" width={150} />
+      </TableCell>
+      <TableCell>
+        <Skeleton variant="text" width={80} />
+      </TableCell>
+      <TableCell>
+        <Skeleton variant="text" width={70} />
+      </TableCell>
+      <TableCell>
+        <Skeleton variant="text" width={120} />
+      </TableCell>
+      <TableCell>
+        <Skeleton variant="circular" width={40} height={40} />
+      </TableCell>
+    </TableRow>
+  ));
+
   return (
     <Paper elevation={3} sx={{ p: 2, mt: 2, borderRadius: "8px" }}>
       <TextField
@@ -79,6 +112,64 @@ export default function CoinTable({
         sx={{ mb: 2 }}
         onChange={(e) => setSearch(e.target.value)}
       />
+
+      {loading && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+            zIndex: 10,
+            borderRadius: "8px",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <CircularProgress
+              size={60}
+              thickness={4}
+              sx={{
+                color: "primary.main",
+                animationDuration: "1.5s",
+              }}
+            />
+            <Box
+              sx={{
+                fontSize: "1rem",
+                fontWeight: "500",
+                color: "text.primary",
+                background: "linear-gradient(90deg, #1976d2, #42a5f5, #1976d2)",
+                backgroundSize: "200% auto",
+                backgroundClip: "text",
+                textFillColor: "transparent",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                animation: "gradientShift 2s linear infinite",
+                "@keyframes gradientShift": {
+                  "0%": { backgroundPosition: "0% 50%" },
+                  "50%": { backgroundPosition: "100% 50%" },
+                  "100%": { backgroundPosition: "0% 50%" },
+                },
+              }}
+            >
+              Loading cryptocurrency data...
+            </Box>
+          </Box>
+        </Box>
+      )}
+
       <Table>
         <TableHead>
           <TableRow>
@@ -92,42 +183,47 @@ export default function CoinTable({
           </TableRow>
         </TableHead>
         <TableBody>
-          {filteredCoins.map((coin) => (
-            <TableRow key={coin.id} hover>
-              <TableCell>
-                <IconButton onClick={() => toggleWatchlist(coin.id)}>
-                  <StarIcon
-                    color={watchlist.includes(coin.id) ? "primary" : "disabled"}
-                  />
-                </IconButton>
-              </TableCell>
-              <TableCell>
-                <img src={coin.image} alt={coin.name} width={25} />
-              </TableCell>
-              <TableCell>
-                <Link
-                  to={`/coin/${coin.id}`}
-                  style={{ textDecoration: "none", color: "inherit" }}
-                >
-                  {coin.name} ({coin.symbol.toUpperCase()})
-                </Link>
-              </TableCell>
-              <TableCell>${coin.current_price.toLocaleString()}</TableCell>
-              <TableCell
-                style={{
-                  color: coin.price_change_percentage_24h > 0 ? "green" : "red",
-                }}
-              >
-                {coin.price_change_percentage_24h.toFixed(2)}%
-              </TableCell>
-              <TableCell>${coin.market_cap.toLocaleString()}</TableCell>
-              <TableCell>
-                <IconButton onClick={() => onAddToPortfolio(coin)}>
-                  <AddIcon />
-                </IconButton>
-              </TableCell>
-            </TableRow>
-          ))}
+          {loading
+            ? skeletonRows
+            : filteredCoins.map((coin) => (
+                <TableRow key={coin.id} hover>
+                  <TableCell>
+                    <IconButton onClick={() => toggleWatchlist(coin.id)}>
+                      <StarIcon
+                        color={
+                          watchlist.includes(coin.id) ? "primary" : "disabled"
+                        }
+                      />
+                    </IconButton>
+                  </TableCell>
+                  <TableCell>
+                    <img src={coin.image} alt={coin.name} width={25} />
+                  </TableCell>
+                  <TableCell>
+                    <Link
+                      to={`/coin/${coin.id}`}
+                      style={{ textDecoration: "none", color: "inherit" }}
+                    >
+                      {coin.name} ({coin.symbol.toUpperCase()})
+                    </Link>
+                  </TableCell>
+                  <TableCell>${coin.current_price.toLocaleString()}</TableCell>
+                  <TableCell
+                    style={{
+                      color:
+                        coin.price_change_percentage_24h > 0 ? "green" : "red",
+                    }}
+                  >
+                    {coin.price_change_percentage_24h.toFixed(2)}%
+                  </TableCell>
+                  <TableCell>${coin.market_cap.toLocaleString()}</TableCell>
+                  <TableCell>
+                    <IconButton onClick={() => onAddToPortfolio(coin)}>
+                      <AddIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
         </TableBody>
       </Table>
       <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
