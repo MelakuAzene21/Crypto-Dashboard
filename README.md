@@ -83,7 +83,7 @@ A modern, dark-themed cryptocurrency dashboard built with React, TypeScript, and
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/MelakuAzene21/Crypto-Dashboard
 cd crypto-dashboard
 ```
 
