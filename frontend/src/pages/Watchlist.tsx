@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useNotification } from "../contexts/NotificationContext";
 import {
   Box,
   Typography,
@@ -23,6 +24,7 @@ import {
   TrendingDown,
   Add,
   Remove,
+  Refresh,
 } from "@mui/icons-material";
 
 export default function Watchlist() {
@@ -32,6 +34,7 @@ export default function Watchlist() {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { showNotification } = useNotification();
 
   useEffect(() => {
     loadWatchlist();
@@ -44,6 +47,11 @@ export default function Watchlist() {
     const saved = localStorage.getItem("watchlist");
     if (saved) {
       setWatchlist(JSON.parse(saved));
+    } else {
+      // Add some default coins to the watchlist for demonstration
+      const defaultWatchlist = ["bitcoin", "ethereum", "cardano"];
+      setWatchlist(defaultWatchlist);
+      localStorage.setItem("watchlist", JSON.stringify(defaultWatchlist));
     }
   };
 
@@ -60,31 +68,74 @@ export default function Watchlist() {
     }
 
     try {
-      const coinsData = await Promise.all(
-        watchlist.map(async (coinId) => {
-          try {
-            const { data } = await axios.get(`http://localhost:5000/api/coin/${coinId}`);
-            return data;
-          } catch (error) {
-            console.error(`Error fetching coin ${coinId}:`, error);
-            return null;
-          }
-        })
+      // First try to get all coins from the backend
+      const { data: allCoins } = await axios.get("http://localhost:5000/api/coins");
+      
+      // Filter to only include watchlist coins
+      const watchlistData = allCoins.filter((coin: any) => 
+        watchlist.includes(coin.id)
       );
-
-      setWatchlistCoins(coinsData.filter(coin => coin !== null));
+      
+      setWatchlistCoins(watchlistData);
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching watchlist coins:", error);
-      setLoading(false);
+      console.error("Error fetching watchlist coins from backend:", error);
+      
+      // Fallback to CoinGecko API
+      try {
+        const coinsData = await Promise.all(
+          watchlist.map(async (coinId) => {
+            try {
+              const { data } = await axios.get(
+                `https://api.coingecko.com/api/v3/coins/${coinId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`
+              );
+              return {
+                id: data.id,
+                name: data.name,
+                symbol: data.symbol,
+                image: data.image.large,
+                current_price: data.market_data.current_price.usd,
+                market_cap: data.market_data.market_cap.usd,
+                total_volume: data.market_data.total_volume.usd,
+                price_change_percentage_24h: data.market_data.price_change_percentage_24h,
+                market_cap_rank: data.market_cap_rank
+              };
+            } catch (error) {
+              console.error(`Error fetching coin ${coinId} from CoinGecko:`, error);
+              return null;
+            }
+          })
+        );
+
+        const validCoins = coinsData.filter(coin => coin !== null);
+        setWatchlistCoins(validCoins);
+        setLoading(false);
+        
+        if (validCoins.length > 0) {
+          showNotification(`Loaded ${validCoins.length} coins from CoinGecko API`, 'info');
+        }
+      } catch (fallbackError) {
+        console.error("Error fetching from CoinGecko fallback:", fallbackError);
+        setLoading(false);
+        showNotification('Failed to load watchlist data', 'error');
+      }
     }
   };
 
   const toggleWatchlist = (coinId: string) => {
+    const coin = watchlistCoins.find(c => c.id === coinId);
     const newWatchlist = watchlist.includes(coinId)
       ? watchlist.filter(id => id !== coinId)
       : [...watchlist, coinId];
     saveWatchlist(newWatchlist);
+    
+    if (coin) {
+      if (watchlist.includes(coinId)) {
+        showNotification(`${coin.name} removed from watchlist`, 'info');
+      } else {
+        showNotification(`${coin.name} added to watchlist`, 'success');
+      }
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -101,8 +152,8 @@ export default function Watchlist() {
   };
 
   const getWatchlistStats = () => {
-    const gainers = watchlistCoins.filter(coin => coin.market_data.price_change_percentage_24h > 0).length;
-    const losers = watchlistCoins.filter(coin => coin.market_data.price_change_percentage_24h < 0).length;
+    const gainers = watchlistCoins.filter(coin => coin.price_change_percentage_24h > 0).length;
+    const losers = watchlistCoins.filter(coin => coin.price_change_percentage_24h < 0).length;
     return { gainers, losers };
   };
 
@@ -121,19 +172,40 @@ export default function Watchlist() {
               Track your favorite cryptocurrencies
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => navigate("/markets")}
-            sx={{
-              background: "linear-gradient(135deg, #00D4AA 0%, #3B82F6 100%)",
-              "&:hover": {
-                background: "linear-gradient(135deg, #33DDBB 0%, #60A5FA 100%)",
-              },
-            }}
-          >
-            Add Coins
-          </Button>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<Refresh />}
+              onClick={() => {
+                setLoading(true);
+                fetchWatchlistCoins();
+                showNotification('Watchlist refreshed', 'info');
+              }}
+              sx={{
+                borderColor: "rgba(148, 163, 184, 0.3)",
+                color: "text.secondary",
+                "&:hover": {
+                  borderColor: "primary.main",
+                  color: "primary.main",
+                },
+              }}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => navigate("/markets")}
+              sx={{
+                background: "linear-gradient(135deg, #00D4AA 0%, #3B82F6 100%)",
+                "&:hover": {
+                  background: "linear-gradient(135deg, #33DDBB 0%, #60A5FA 100%)",
+                },
+              }}
+            >
+              Add Coins
+            </Button>
+          </Box>
         </Box>
       </Box>
 
@@ -249,7 +321,24 @@ export default function Watchlist() {
       </Grid>
 
       {/* Watchlist Content */}
-      {watchlistCoins.length === 0 ? (
+      {loading ? (
+        <Card
+          sx={{
+            background: "linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)",
+            border: "1px solid rgba(148, 163, 184, 0.1)",
+            borderRadius: 3,
+          }}
+        >
+          <CardContent sx={{ textAlign: "center", py: 8 }}>
+            <Typography variant="h5" fontWeight="600" color="white" gutterBottom>
+              Loading watchlist...
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Fetching latest cryptocurrency data
+            </Typography>
+          </CardContent>
+        </Card>
+      ) : watchlistCoins.length === 0 ? (
         <Card
           sx={{
             background: "linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)",
@@ -298,7 +387,7 @@ export default function Watchlist() {
                 <CardContent>
                   <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                     <Chip
-                      label={`#${coin.market_data.market_cap_rank}`}
+                      label={`#${coin.market_cap_rank || 'N/A'}`}
                       size="small"
                       sx={{
                         bgcolor: "primary.main",
@@ -308,7 +397,7 @@ export default function Watchlist() {
                       }}
                     />
                     <Avatar
-                      src={coin.image.large}
+                      src={coin.image}
                       sx={{ width: 32, height: 32, mr: 1 }}
                     />
                     <Box sx={{ flexGrow: 1 }}>
@@ -340,10 +429,10 @@ export default function Watchlist() {
 
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
                     <Typography variant="h6" fontWeight="700" color="white">
-                      {formatPrice(coin.market_data.current_price.usd)}
+                      {formatPrice(coin.current_price)}
                     </Typography>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                      {coin.market_data.price_change_percentage_24h >= 0 ? (
+                      {coin.price_change_percentage_24h >= 0 ? (
                         <TrendingUp sx={{ color: "success.main", fontSize: 16 }} />
                       ) : (
                         <TrendingDown sx={{ color: "error.main", fontSize: 16 }} />
@@ -351,19 +440,19 @@ export default function Watchlist() {
                       <Typography
                         variant="caption"
                         fontWeight="600"
-                        color={coin.market_data.price_change_percentage_24h >= 0 ? "success.main" : "error.main"}
+                        color={coin.price_change_percentage_24h >= 0 ? "success.main" : "error.main"}
                       >
-                        {coin.market_data.price_change_percentage_24h.toFixed(2)}%
+                        {coin.price_change_percentage_24h.toFixed(2)}%
                       </Typography>
                     </Box>
                   </Box>
 
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <Typography variant="caption" color="text.secondary">
-                      Market Cap: {formatCurrency(coin.market_data.market_cap.usd)}
+                      Market Cap: {formatCurrency(coin.market_cap)}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Vol: {formatCurrency(coin.market_data.total_volume.usd)}
+                      Vol: {formatCurrency(coin.total_volume)}
                     </Typography>
                   </Box>
                 </CardContent>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useNotification } from "../contexts/NotificationContext";
 import {
   Box,
   Typography,
@@ -42,6 +43,7 @@ export default function Markets() {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { showNotification } = useNotification();
 
   useEffect(() => {
     fetchCoins();
@@ -118,11 +120,20 @@ export default function Markets() {
   };
 
   const toggleWatchlist = (coinId: string) => {
+    const coin = coins.find(c => c.id === coinId);
     const newWatchlist = watchlist.includes(coinId)
       ? watchlist.filter(id => id !== coinId)
       : [...watchlist, coinId];
     localStorage.setItem("watchlist", JSON.stringify(newWatchlist));
     setWatchlist(newWatchlist);
+    
+    if (coin) {
+      if (watchlist.includes(coinId)) {
+        showNotification(`${coin.name} removed from watchlist`, 'info');
+      } else {
+        showNotification(`${coin.name} added to watchlist`, 'success');
+      }
+    }
   };
 
   const stats = getMarketStats();
