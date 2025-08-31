@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useNotification } from "../contexts/NotificationContext";
@@ -32,6 +32,7 @@ import {
   Star,
   StarBorder,
 } from "@mui/icons-material";
+import Pagination from "../components/Pagination";
 
 export default function Markets() {
   const [coins, setCoins] = useState<any[]>([]);
@@ -40,6 +41,11 @@ export default function Markets() {
   const [sortBy, setSortBy] = useState("market_cap");
   const [loading, setLoading] = useState(true);
   const [watchlist, setWatchlist] = useState<string[]>([]);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(24);
+  
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -55,6 +61,11 @@ export default function Markets() {
   useEffect(() => {
     filterAndSortCoins();
   }, [coins, search, sortBy]);
+
+  // Reset to first page when filtered coins change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredCoins.length]);
 
   const fetchCoins = async () => {
     try {
@@ -137,6 +148,13 @@ export default function Markets() {
   };
 
   const stats = getMarketStats();
+
+  // Calculate pagination for grid
+  const totalItems = filteredCoins.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentCoins = filteredCoins.slice(startIndex, endIndex);
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, minHeight: "100vh" }}>
@@ -349,7 +367,7 @@ export default function Markets() {
 
       {/* Markets Grid */}
       <Grid container spacing={2}>
-        {filteredCoins.map((coin) => (
+        {currentCoins.map((coin) => (
           <Grid item xs={12} sm={6} md={4} lg={3} key={coin.id}>
             <Card
               sx={{
@@ -442,6 +460,24 @@ export default function Markets() {
           </Grid>
         ))}
       </Grid>
+      
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Box sx={{ mt: 4 }}>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={(newItemsPerPage) => {
+              setItemsPerPage(newItemsPerPage);
+              setCurrentPage(1); // Reset to first page when changing items per page
+            }}
+            itemsPerPageOptions={[12, 24, 48, 96]}
+          />
+        </Box>
+      )}
     </Box>
   );
 }

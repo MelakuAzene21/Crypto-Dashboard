@@ -145,11 +145,11 @@ export default function Sidebar() {
               fontWeight: 600,
             }}
           >
-            JD
+            MA
           </Avatar>
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="body2" fontWeight="500" color="white">
-              John Doe
+              Melaku Azene
             </Typography>
             <Typography variant="caption" color="text.secondary">
               Premium User

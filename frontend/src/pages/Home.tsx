@@ -380,7 +380,7 @@ export default function Home() {
         <Typography variant="h5" fontWeight="600" color="white" sx={{ mb: 3 }}>
           All Markets
         </Typography>
-        <CoinTable coins={coins} loading={loading} />
+        <CoinTable coins={coins} loading={loading} showPagination={true} />
       </Box>
     </Box>
   );
