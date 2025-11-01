@@ -209,7 +209,7 @@ npm run build
 
 Deploy the `build` folder to your hosting service.
 
-## 🤝 Contributing
+## 🤝 if you want Contributing
 
 1. Fork the repository
 2. Create a feature branch
